@@ -1,0 +1,49 @@
+---
+- name: Common Linux stuff
+  hosts: all
+  tasks:
+    - name: /etc/rtf_name
+      ansible.builtin.copy:
+        dest : /etc/rtf_name
+        content: "{{ inventory_hostname }}"
+
+    - name: Feed /etc/hosts with platform hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: ".*{{ item }}$"
+        line: "{{ datastate['hosts'][item]['ip'] }} {{ item }}.rudder.local {{ datastate['hosts'][item]['short-name'] }} {{ datastate['hosts'][item]['long-name'] }}"
+        state: present
+        create: yes
+      with_items: "{{ datastate.hosts.keys() }}"
+
+    - name: Download rudder-setup
+      ansible.builtin.get_url:
+        url: https://repository.rudder.io/tools/rudder-setup
+        dest: /usr/local/bin/rudder-setup
+        mode: '0755'
+
+- name: Install Server
+  hosts: server
+  tasks:
+    - name: running rudder-setup
+      ansible.builtin.command: "/usr/local/bin/rudder-setup setup-{{ datastate['hosts'][inventory_hostname]['rudder-setup'] }} {{ datastate['hosts'][inventory_hostname]['rudder-version'] }}"
+      register: myoutput
+      environment:
+        ADMIN_PASSWORD: admin
+        DISABLE_AUTODETECT_NETWORKS: yes
+        ALLOWEDNETWORK: "{{ datastate['subnet'] }}/24"
+
+    - debug: var=myoutput.stdout_lines
+
+- name: Install agent
+  hosts: agent
+  tasks:
+    - name: running rudder-setup
+      ansible.builtin.command: "/usr/local/bin/rudder-setup setup-{{ datastate['hosts'][inventory_hostname]['rudder-setup'] }} {{ datastate['hosts'][inventory_hostname]['rudder-version'] }} {{ datastate['hosts'][inventory_hostname]['server'] }}"
+      register: myoutput
+      environment:
+        ADMIN_PASSWORD: admin
+        DISABLE_AUTODETECT_NETWORKS: yes
+        ALLOWEDNETWORK: "{{ datastate['subnet'] }}/24"
+
+    - debug: var=myoutput.stdout_lines

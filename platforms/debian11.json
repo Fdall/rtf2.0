@@ -1,0 +1,6 @@
+{
+  "default":{ "rudder-version": "8.0" },
+  "server": { "rudder-setup": "server", "system": "debian11" },
+  "agent2": { "rudder-setup": "agent", "server": "server", "system": "ubuntu20_04" },
+  "agent1": { "rudder-setup": "agent", "server": "server", "system": "ubuntu20_04" }
+}
